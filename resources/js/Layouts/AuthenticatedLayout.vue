@@ -39,6 +39,19 @@ const showingNavigationDropdown = ref(false);
                                 >
                                     Dashboard
                                 </NavLink>
+                                <NavLink
+                                    :href="route('upload.form')"
+                                    :active="route().current('upload.form')"
+                                >
+                                    Upload
+                                </NavLink>
+                                <NavLink
+                                    :href="route('upload.bulk')"
+                                    :active="route().current('upload.bulk')"
+                                >
+                                    Bulk Upload
+                                </NavLink>
+                                
                             </div>
                         </div>
 
