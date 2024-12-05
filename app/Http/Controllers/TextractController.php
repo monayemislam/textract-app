@@ -43,4 +43,11 @@ class TextractController extends Controller
             'files' => $uploadedFiles
         ]);
     }
+
+    public function getUploadedFiles()
+    {
+        $uploadedFiles = UploadedFile::where('user_id', auth()->id())->get();
+        return inertia('Results', ['files' => $uploadedFiles]);
+    }
+
 }

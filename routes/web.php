@@ -25,6 +25,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/upload', [TextractController::class, 'showUploadForm'])->name('upload.form');
     Route::post('/upload', [TextractController::class, 'processBulkUpload'])->name('upload.bulk');
+    Route::get('/results', [TextractController::class, 'getUploadedFiles'])->name('upload.results');
+    
 });
 
 require __DIR__.'/auth.php';

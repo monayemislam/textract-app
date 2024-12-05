@@ -45,12 +45,6 @@ const showingNavigationDropdown = ref(false);
                                 >
                                     Upload
                                 </NavLink>
-                                <NavLink
-                                    :href="route('upload.bulk')"
-                                    :active="route().current('upload.bulk')"
-                                >
-                                    Bulk Upload
-                                </NavLink>
                                 
                             </div>
                         </div>
