@@ -12,6 +12,7 @@ class UploadedFile extends Model
     protected $fillable = [
         'user_id',
         'file_path',
+        'original_name',
         'status',
         'extracted_data',
         'error_message'

@@ -10,6 +10,16 @@
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
                 <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                     <div class="p-6">
+                        <!-- Success Message -->
+                        <div v-if="page.props?.flash?.success" class="mb-4 p-4 bg-green-100 text-green-700 rounded">
+                            {{ page.props.flash.success }}
+                        </div>
+
+                        <!-- Error Messages -->
+                        <div v-if="form.errors.documents" class="mb-4 p-4 bg-red-100 text-red-700 rounded">
+                            {{ form.errors.documents }}
+                        </div>
+
                         <form @submit.prevent="uploadDocuments" class="space-y-6">
                             <div class="flex items-center justify-center w-full">
                                 <label class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
@@ -57,10 +67,6 @@
                                 </button>
                             </div>
                         </form>
-
-                        <div v-if="successMessage" class="mt-4 p-4 bg-green-100 text-green-700 rounded">
-                            {{ successMessage }}
-                        </div>
                     </div>
                 </div>
             </div>
@@ -70,49 +76,49 @@
 
 <script setup>
 import { ref } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
+const page = usePage();
 const files = ref(null);
 const selectedFiles = ref([]);
-const successMessage = ref('');
 const isUploading = ref(false);
+
+const form = useForm({
+    documents: []
+});
 
 const handleFileChange = (event) => {
     selectedFiles.value = Array.from(event.target.files);
+    form.documents = event.target.files;
 };
 
 const removeFile = (fileToRemove) => {
     selectedFiles.value = selectedFiles.value.filter(file => file !== fileToRemove);
+    form.documents = new DataTransfer();
+    selectedFiles.value.forEach(file => {
+        form.documents.items.add(file);
+    });
+    form.documents = form.documents.files;
 };
 
-const uploadDocuments = async () => {
+const uploadDocuments = () => {
     if (selectedFiles.value.length === 0) return;
 
     isUploading.value = true;
-    const formData = new FormData();
-    
-    selectedFiles.value.forEach(file => {
-        formData.append('documents[]', file);
+    form.post('/upload', {
+        preserveScroll: true,
+        onSuccess: () => {
+            selectedFiles.value = [];
+            if (files.value) files.value.value = '';
+            isUploading.value = false;
+        },
+        onError: () => {
+            isUploading.value = false;
+        },
+        onFinish: () => {
+            isUploading.value = false;
+        }
     });
-
-    try {
-        await router.post('/upload', formData, {
-            onSuccess: () => {
-                successMessage.value = 'Files uploaded successfully!';
-                selectedFiles.value = [];
-                if (files.value) files.value.value = '';
-            },
-            onError: (errors) => {
-                console.error(errors);
-            },
-            onFinish: () => {
-                isUploading.value = false;
-            }
-        });
-    } catch (error) {
-        console.error('Upload failed:', error);
-        isUploading.value = false;
-    }
 };
 </script>

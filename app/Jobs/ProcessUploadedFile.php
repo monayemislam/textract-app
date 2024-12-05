@@ -26,15 +26,33 @@ class ProcessUploadedFile implements ShouldQueue
     public function handle()
     {
         try {
+            \Log::info('Starting ProcessUploadedFile job', [
+                'file_id' => $this->uploadedFile->id,
+                'file_path' => $this->uploadedFile->file_path,
+                'aws_region' => env('AWS_DEFAULT_REGION'),
+                'aws_bucket' => env('AWS_BUCKET')
+            ]);
+
             $this->uploadedFile->update(['status' => 'processing']);
 
+            // Initialize AWS Textract client with explicit configuration
             $textract = new TextractClient([
                 'version' => 'latest',
-                'region'  => env('AWS_DEFAULT_REGION'),
+                'region'  => 'us-east-1',
                 'credentials' => [
                     'key'    => env('AWS_ACCESS_KEY_ID'),
                     'secret' => env('AWS_SECRET_ACCESS_KEY'),
                 ],
+                'http'    => [
+                    'verify' => false // Only for testing, remove in production
+                ]
+            ]);
+
+            // Log the document parameters
+            \Log::info('Analyzing document with parameters', [
+                'bucket' => env('AWS_BUCKET'),
+                'file_path' => $this->uploadedFile->file_path,
+                'full_path' => 'textract_resources/' . basename($this->uploadedFile->file_path)
             ]);
 
             $result = $textract->analyzeDocument([
@@ -47,16 +65,22 @@ class ProcessUploadedFile implements ShouldQueue
                 'FeatureTypes' => ['TABLES', 'FORMS'],
             ]);
 
-            // Store the extracted data
+            \Log::info('Textract analysis completed', [
+                'result' => $result->toArray()
+            ]);
+
             $this->uploadedFile->update([
                 'status' => 'completed',
                 'extracted_data' => json_encode($result->toArray())
             ]);
 
-        } catch (Exception $e) {
-            Log::error('Textract processing failed: ' . $e->getMessage(), [
+        } catch (\Exception $e) {
+            \Log::error('Textract processing failed', [
                 'file_id' => $this->uploadedFile->id,
-                'error' => $e->getMessage()
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'file_path' => $this->uploadedFile->file_path,
+                'trace' => $e->getTraceAsString()
             ]);
 
             $this->uploadedFile->update([
